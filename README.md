@@ -82,5 +82,10 @@ By leveraging Soroban smart contracts, we envision a future where casino gaming 
 20. **House Bankroll Management**: DAO-managed house bankroll where token holders share in casino profits and losses
 
 ---
+## Contract Details
+Contract ID: CBWQ4AMQBZHLSAAS26WNF43WDTGCEFKNOVSETP5A3HKZR7X2GLUGQ3AI
+<img width="1919" height="725" alt="image" src="https://github.com/user-attachments/assets/b012e8c9-10db-429d-b1db-2aba9ab82a43" />
+
 
 **Built with Soroban SDK** | **Stellar Blockchain Platform** | **Provably Fair Gaming** | **Instant Payouts**
+
