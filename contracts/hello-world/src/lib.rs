@@ -1,7 +1,6 @@
 #![no_std]
 use soroban_sdk::{
-    contract, contractimpl, contracttype, Vec, Address, Env, token,
-    panic_with_error,
+    contract, contractimpl, contracttype, panic_with_error, token, Address, Env, Vec,
 };
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -28,8 +27,8 @@ impl From<BlackjackError> for soroban_sdk::Error {
 #[derive(Clone, Debug)]
 #[contracttype]
 pub struct Card {
-    value: u32,  // 1-13 (Ace = 1, Jack = 11, Queen = 12, King = 13)
-    suit: u32,   // 0-3 (Hearts, Diamonds, Clubs, Spades)
+    value: u32, // 1-13 (Ace = 1, Jack = 11, Queen = 12, King = 13)
+    suit: u32,  // 0-3 (Hearts, Diamonds, Clubs, Spades)
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -80,9 +79,11 @@ impl BlackjackContract {
             panic_with_error!(&env, BlackjackError::InvalidAmount);
         }
 
-        let token = env.storage().instance().get::<_, Address>(&DataKey::Token).unwrap();
+        let token = env.storage().instance()
+            .get::<_, Address>(&DataKey::Token)
+            .unwrap_or_else(|| panic_with_error!(&env, BlackjackError::Unauthorized));
         let token_client = token::Client::new(&env, &token);
-        
+
         // Transfer tokens from sender to contract
         token_client.transfer(&from, &env.current_contract_address(), &amount);
     }
@@ -96,9 +97,13 @@ impl BlackjackContract {
             panic_with_error!(&env, BlackjackError::InvalidAmount);
         }
 
-        let token = env.storage().instance().get::<_, Address>(&DataKey::Token).unwrap();
+        let token = env
+            .storage()
+            .instance()
+            .get::<_, Address>(&DataKey::Token)
+            .unwrap();
         let token_client = token::Client::new(&env, &token);
-        
+
         // Check contract balance
         let contract_balance = token_client.balance(&env.current_contract_address());
         if contract_balance < amount {
@@ -111,7 +116,11 @@ impl BlackjackContract {
 
     // Get contract balance
     pub fn get_contract_balance(env: Env) -> i128 {
-        let token = env.storage().instance().get::<_, Address>(&DataKey::Token).unwrap();
+        let token = env
+            .storage()
+            .instance()
+            .get::<_, Address>(&DataKey::Token)
+            .unwrap();
         let token_client = token::Client::new(&env, &token);
         token_client.balance(&env.current_contract_address())
     }
@@ -122,6 +131,9 @@ impl BlackjackContract {
     }
 
     pub fn bet_and_deal(env: Env, player: Address, bet: i128) -> Game {
+        // IMPORTANT: Require player authorization for the bet transfer
+        player.require_auth();
+
         // Check if a game already exists
         if env.storage().instance().has(&DataKey::Game) {
             panic_with_error!(&env, BlackjackError::GameAlreadyExists);
@@ -133,10 +145,14 @@ impl BlackjackContract {
         }
 
         // Get token client and check if contract has enough balance for potential payout
-        let token = env.storage().instance().get::<_, Address>(&DataKey::Token).unwrap();
+        let token = env
+            .storage()
+            .instance()
+            .get::<_, Address>(&DataKey::Token)
+            .unwrap();
         let token_client = token::Client::new(&env, &token);
         let contract_balance = token_client.balance(&env.current_contract_address());
-        
+
         // Contract needs at least 2x the bet to cover potential payout
         if contract_balance < bet * 2 {
             panic_with_error!(&env, BlackjackError::InsufficientFunds);
@@ -234,7 +250,9 @@ impl BlackjackContract {
     }
 
     fn read_game(env: &Env) -> Game {
-        env.storage().instance().get(&DataKey::Game)
+        env.storage()
+            .instance()
+            .get(&DataKey::Game)
             .unwrap_or_else(|| panic_with_error!(env, BlackjackError::NoGameExists))
     }
 
