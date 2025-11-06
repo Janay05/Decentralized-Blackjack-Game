@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blackjack - Stellar Soroban</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stellar-sdk/11.1.0/stellar-sdk.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stellar-freighter-api/5.0.0/index.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            flex: 1;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 30px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        h1 {
+            font-size: 3em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .subtitle {
+            color: #ffd700;
+            font-size: 1.2em;
+            margin-bottom: 20px;
+        }
+
+        #wallet-section {
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(17, 153, 142, 0.4);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .btn-warning:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(245, 87, 108, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .wallet-info {
+            display: inline-flex;
+            align-items: center;
+            gap: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px 20px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        #walletAddress {
+            font-family: 'Courier New', monospace;
+            color: #ffd700;
+        }
+
+        .status-message {
+            margin-top: 15px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            display: none;
+            font-weight: 500;
+        }
+
+        .status-message.success {
+            background: rgba(17, 153, 142, 0.2);
+            border: 1px solid #11998e;
+        }
+
+        .status-message.error {
+            background: rgba(245, 87, 108, 0.2);
+            border: 1px solid #f5576c;
+        }
+
+        .status-message.info {
+            background: rgba(102, 126, 234, 0.2);
+            border: 1px solid #667eea;
+        }
+
+        .game-container {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 30px;
+            margin-top: 30px;
+        }
+
+        .sidebar {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+        }
+
+        .sidebar h2 {
+            margin-bottom: 20px;
+            color: #ffd700;
+            font-size: 1.5em;
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .info-item:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            color: #aaa;
+        }
+
+        .info-value {
+            color: #ffd700;
+            font-weight: 600;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #ffd700;
+            font-weight: 600;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+            font-size: 1em;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .game-board {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            min-height: 500px;
+        }
+
+        .dealer-section, .player-section {
+            margin-bottom: 40px;
+        }
+
+        .section-title {
+            font-size: 1.5em;
+            margin-bottom: 15px;
+            color: #ffd700;
+        }
+
+        .hand {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            min-height: 150px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+        }
+
+        .card {
+            width: 80px;
+            height: 112px;
+            background: white;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 2em;
+            color: #000;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card.hearts, .card.diamonds {
+            color: #e74c3c;
+        }
+
+        .card.clubs, .card.spades {
+            color: #000;
+        }
+
+        .card-value {
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+
+        .card-suit {
+            font-size: 1.2em;
+        }
+
+        .score {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #ffd700;
+            margin-top: 10px;
+        }
+
+        .actions {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 30px;
+        }
+
+        .hidden-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .game-result {
+            text-align: center;
+            padding: 30px;
+            background: rgba(255, 215, 0, 0.1);
+            border-radius: 15px;
+            margin: 20px 0;
+            border: 2px solid #ffd700;
+        }
+
+        .game-result h3 {
+            font-size: 2.5em;
+            margin-bottom: 15px;
+            color: #ffd700;
+        }
+
+        .game-result p {
+            font-size: 1.3em;
+            margin: 10px 0;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #aaa;
+            font-size: 1.1em;
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            margin-top: 40px;
+            color: #aaa;
+        }
+
+        @keyframes dealCard {
+            from {
+                transform: translateY(-100px) rotate(-20deg);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0) rotate(0);
+                opacity: 1;
+            }
+        }
+
+        .card-enter {
+            animation: dealCard 0.5s ease-out;
+        }
+
+        @media (max-width: 968px) {
+            .game-container {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                font-size: 2em;
+            }
+
+            .actions {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>♠️ BLACKJACK ♥️</h1>
+            <p class="subtitle">Powered by Stellar Soroban Smart Contracts</p>
+            <div id="wallet-section">
+                <button id="connectBtn" class="btn btn-primary">Connect Freighter Wallet</button>
+                <div id="walletInfo" class="wallet-info" style="display: none;">
+                    <span id="walletAddress"></span>
+                    <button id="disconnectBtn" class="btn btn-warning">Disconnect</button>
+                </div>
+            </div>
+            <div id="status" class="status-message"></div>
+        </header>
+
+        <main>
+            <div class="game-container">
+                <div class="sidebar">
+                    <h2>Game Info</h2>
+                    <div class="info-item">
+                        <span class="info-label">House Balance:</span>
+                        <span class="info-value" id="houseBalance">Loading...</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Current Bet:</span>
+                        <span class="info-value" id="currentBet">0 XLM</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Game Status:</span>
+                        <span class="info-value" id="gameStatus">No Active Game</span>
+                    </div>
+
+                    <div class="form-group" style="margin-top: 30px;">
+                        <label>Bet Amount (XLM)</label>
+                        <input type="number" id="betAmount" placeholder="Min 1 XLM" min="1" value="5" step="0.1">
+                    </div>
+                    <button id="placeBetBtn" class="btn btn-success" style="width: 100%;">Place Bet & Deal</button>
+                    <div id="betResult" class="status-message"></div>
+                </div>
+
+                <div class="game-board">
+                    <div id="noGameMessage" class="empty-state">
+                        <h3>Welcome to Blackjack!</h3>
+                        <p>Connect your wallet and place a bet to start playing.</p>
+                        <p style="margin-top: 20px; font-size: 0.9em;">🎯 Beat the dealer by getting closer to 21 without going over!</p>
+                    </div>
+
+                    <div id="gameArea" style="display: none;">
+                        <div class="dealer-section">
+                            <div class="section-title">Dealer's Hand</div>
+                            <div id="dealerHand" class="hand"></div>
+                            <div class="score">Score: <span id="dealerScore">0</span></div>
+                        </div>
+
+                        <div class="player-section">
+                            <div class="section-title">Your Hand</div>
+                            <div id="playerHand" class="hand"></div>
+                            <div class="score">Score: <span id="playerScore">0</span></div>
+                        </div>
+
+                        <div class="actions">
+                            <button id="hitBtn" class="btn btn-success">Hit</button>
+                            <button id="standBtn" class="btn btn-warning">Stand</button>
+                        </div>
+
+                        <div id="gameResult" class="game-result" style="display: none;"></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>Built with ❤️ on Stellar Soroban • Play Responsibly</p>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
